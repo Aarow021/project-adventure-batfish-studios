@@ -143,7 +143,7 @@ function generate() {
     room.addStory(`[c:var(--destruction)]"Best 'ta take 'em out now b'fore them'alls got us'n kickin' the bucket."`);
     room.addStory(`[c:var(--dialogue)]"C'mon. We're burnin' daylight awt 'ere."`);
     room.addStory(`"Take these. Yer gunna ned 'em fer this crowd.`);
-    room.addAction({type: 'getItem', parameters: ['Bandages', 3]});
+    room.addAction({type: 'getItem', parameters: [{name: 'Bandages', min: 3}]});
     room.addStory(`[c:var(--dialogue)]"An' fer the love'a all thurr's good, don'tcha go'n get yerself kil't. Ain't no one else 'round 'ere fer ya."`);
     choice1 = room.createChoice(`Nuh uh. You quit.`);
     choice1.addAction({type: 'changeRoom', parameters: ['s-start']});
@@ -179,7 +179,7 @@ function generate() {
     room.addStory(`[c:var(--dialogue)]"Alright, kid. Let's move. Muh crew's got a few more stops 'ta make, an' I reckon we's all got some shoppin' 'ta do."`);
     room.addStory(`He boosts you up onto Marisol, roughly scritching at her neck.`);
     room.addStory(`[c:var(--dialogue)]"I know a place 'round here we kin stop fer a bit. Could get'cha some new gear, if'n yer up fer it."`);
-    room.addStory(`[c;var(--character)]Palmetto [c:]hops up behind you, wrapping his arms around your waist as he guides Marisol away from the campsite.`);
+    room.addStory(`[c:var(--character)]Palmetto [c:]hops up behind you, wrapping his arms around your waist as he guides Marisol away from the campsite.`);
     room.addStory(`The others follow suit, and you all ride off into the distance, leaving the camp behind.`);
     room.addStory(`The sun is setting, and the sky is painted with hues of orange and pink. The air is thick and you can't get the taste of metal out of your mouth.`);
     choice1 = room.createChoice(`Head to their campsite.`);

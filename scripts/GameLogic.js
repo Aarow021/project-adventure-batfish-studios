@@ -360,10 +360,8 @@ class Game {
     async ending(endType) {
         game.isGameLoop = false;
         game.currentEnding = game.endings[endType];
-        if (!history.endings.includes(endType)){
-            game.currentEnding.createChoice('Restart')
-                .addAction({ type: 'restart'});
-        }
+        game.endings[endType].createChoice('Restart')
+            .addAction({ type: 'restart'});
         history.addEnding(endType);
         clearDialogueText();
         for (const item of game.currentEnding.queuelist) {
@@ -1851,9 +1849,9 @@ async function selectChoice(choiceContainer) {
 
 // tries to run an action
 async function attemptAction(action) {
-    if (action.usesLeft <= 0) return false;
-    if (!game.chanceRoll(action.chance)) return false;
-    if (!checkRequirements(action, 'use').metRequirements) return false;
+    if (action.usesLeft <= 0) return 'failedAction';
+    if (!game.chanceRoll(action.chance)) return 'failedAction';
+    if (!checkRequirements(action, 'use').metRequirements) return 'failedAction';
     action.usesLeft -= 1;
     if (action.delay) await sleep(action.delay)
     if (action.waits) {
@@ -1891,6 +1889,7 @@ async function attemptActionsWithText(actions) {
         } else {
             actionResult = attemptAction(action);
         }
+        if (actionResult === 'failedAction') continue;
         if (actionResult && actionResult?.messages) {
             for (const message of actionResult.messages) {
                 typeText(message, {element: document.getElementById('action-output')});
@@ -1898,7 +1897,7 @@ async function attemptActionsWithText(actions) {
                 history.addAction(cleanText);
             }
         }
-        if (action.waits && actionResult != false && action.type != 'encounter' && action.type != 'randomEncounter') {
+        if (action.waits && actionResult && action.type != 'encounter' && action.type != 'randomEncounter') {
             await awaitClick(document.getElementById('dialogue-box'));
         }
     }
