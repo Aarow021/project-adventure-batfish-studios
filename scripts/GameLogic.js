@@ -319,6 +319,20 @@ class Game {
         if (clearsText) clearText(document.getElementById(elementID));
         await typeText(textObj.text,{element: document.getElementById(elementID), speed: textObj.speed, variance: textObj.variance, skippable: options.skippable, skipElement: document.getElementById('dialogue-box'), animation: textObj.animation, textControllerSignal, waits: textObj.waits, waitdelay: textObj.waitDelay});
     }
+
+    // diplays a story part to the dialogue box
+    async showStory(story) {
+        if (story.usesLeft <= 0) return;
+        if (!checkRequirements(story, 'show').metRequirements) return;
+        const dialogueBox = document.getElementById('dialogue-box');
+        const storyElement = document.getElementById('story');
+        clearText(storyElement);
+        await typeText(story.text, {element: storyElement, speed: story.speed, variance: story.variance, skippable: true, skipElement: dialogueBox, animation: story.animation, signal:textControllerSignal, waits: story.waits, waitDelay: story.waitDelay});
+        const cleanText = parseStyles(story.text, 'This returns the clean text because nothing matches this.').text;
+        history.addStory(cleanText);
+        clearText(document.getElementById('action-output'));
+        story.usesLeft -= 1;
+    }
     
 
     // has a given chance to return true
@@ -358,38 +372,38 @@ class Game {
 
     // initiates an ending
     async ending(endType) {
-        game.isGameLoop = false;
-        game.currentEnding = game.endings[endType];
-        game.endings[endType].createChoice('Restart')
+        game.currentEnding = endType;
+        game.currentEnding.createChoice('Restart')
             .addAction({ type: 'restart'});
         history.addEnding(endType);
-        clearDialogueText();
-        for (const item of game.currentEnding.queuelist) {
-            if (item.type === 'story') {
-                clearText(document.getElementById('story'));
-                await showStory(item.value);
-                clearText(document.getElementById('action-output'));
-            } else if (item.type === 'choicelist') {
-                let selectedChoices = [];
-                while (getShownChoices(item.value, selectedChoices).length > 0) {
-                    showChoices(item.value, document.getElementById('choices'), selectedChoices);
-                    let selectedChoice = await tryChoices(document.getElementById('choices'));
-                    selectedChoices.push(selectedChoice);
-                    history.addChoice(selectedChoice);
-                    clearText(document.getElementById('action-output'))
-                    clearText(document.getElementById('choices'))
-                    if (selectedChoice.text === 'Restart') {
-                        attemptActionsWithText(selectedChoice.actions);
-                    } else {
-                        await attemptActionsWithText(selectedChoice.actions);
-                    }
-                }
-            } else if (item.type === 'actionlist') {
-                await attemptActionsWithText(item.value);
-            }
-        }
-        clearDialogueText();
-        await sleep(10);
+        game.currentRoom = game.currentEnding;
+        // clearDialogueText();
+        // for (const item of game.currentEnding.queuelist) {
+        //     if (item.type === 'story') {
+        //         clearText(document.getElementById('story'));
+        //         await game.showStory(item.value);
+        //         clearText(document.getElementById('action-output'));
+        //     } else if (item.type === 'choicelist') {
+        //         let selectedChoices = [];
+        //         while (getShownChoices(item.value, selectedChoices).length > 0) {
+        //             showChoices(item.value, document.getElementById('choices'), selectedChoices);
+        //             let selectedChoice = await tryChoices(document.getElementById('choices'));
+        //             selectedChoices.push(selectedChoice);
+        //             history.addChoice(selectedChoice);
+        //             clearText(document.getElementById('action-output'))
+        //             clearText(document.getElementById('choices'))
+        //             if (selectedChoice.text === 'Restart') {
+        //                 attemptActionsWithText(selectedChoice.actions);
+        //             } else {
+        //                 await attemptActionsWithText(selectedChoice.actions);
+        //             }
+        //         }
+        //     } else if (item.type === 'actionlist') {
+        //         await attemptActionsWithText(item.value);
+        //     }
+        // }
+        // clearDialogueText();
+        // await sleep(10);
     }
 
     // resets the player and game
@@ -934,6 +948,7 @@ export class StoryObject extends TextObject {
     /**
      * @typedef {Object} StoryConfig_
      * @prop {Number} maxUses - The number of times this object can be used. Infinity for unlimited uses
+     * @prop {Array} requirements - Array of requirements for the story to show
      * 
      * @typedef {TextObjectConfig & StoryConfig_} StoryConfig
      */
@@ -944,12 +959,20 @@ export class StoryObject extends TextObject {
      */
     constructor(text, options) {
         let defaults = {
-            speed:20, variance:5, animation:'default', waits:true, waitDelay:0, skippable:true, maxUses:Infinity
+            speed:20, variance:5, animation:'default', waits:true, waitDelay:0, skippable:true, maxUses:Infinity, requirements: []
         }
 
         super(text, Object.assign(defaults, options));
         this.maxUses = this.maxUses ?? maxUses;
         this.usesLeft = this.maxUses;
+    }
+
+    /**
+     * @param {RequirementConfig} options 
+     */
+    addRequirement(options) {
+        this.requirements.push(new Requirement(options));
+        return this;
     }
 
     clone() {
@@ -990,20 +1013,20 @@ export class Action {
      * @prop {Array} parameters - parameters for the function
      * @prop {Boolean} waits - Whether the function is awaited
      * @prop {Number} chance - (0-100) The chance for the function to be run
-     * @prop {Number} maxUses The nymber of times this action be run in a run
-     * @prop {Number} delay Ms delay before action is run
-     * @prop {Number} skipsWait Hard sets the action to not be awaited
+     * @prop {Number} maxUses - The nymber of times this action be run in a run
+     * @prop {Number} delay - Ms delay before action is run
+     * @prop {Number} skipsWait - Hard sets the action to not be awaited
+     * @prop {Array} requirements - Array of requirements for the action to run
      * 
      * @param {ActionConfig} options
      */
 
     constructor(options) {
         let defaults = {
-            type:'', parameters:[], waits:false, chance:100, maxUses:Infinity, delay: 0
+            type:'', parameters:[], waits:false, chance:100, maxUses:Infinity, delay: 0, requirements: []
         }
         
         Object.assign(this, Object.assign(defaults, options))
-        this.requirements = [];
         this.usesLeft = this.maxUses;
     }
 
@@ -1011,7 +1034,7 @@ export class Action {
      * @param {RequirementConfig} options 
      */
     addRequirement(options) {
-        options.mode = options.mode ?? 'use';;
+        options.mode = options.mode ?? 'use';
         this.requirements.push(new Requirement(options));
         return this;
     }
@@ -1743,20 +1766,6 @@ async function typeText(text, {element, speed = 10, variance = 0, skippable = tr
     }
 }
 
-// diplays each story part to the dialogue box
-async function showStory(story) {
-    if (story.usesLeft <= 0) return;
-    if (!checkRequirements(story, 'show').metRequirements) return;
-    const dialogueBox = document.getElementById('dialogue-box');
-    const storyElement = document.getElementById('story');
-    clearText(storyElement);
-    await typeText(story.text, {element: storyElement, speed: story.speed, variance: story.variance, skippable: true, skipElement: dialogueBox, animation: story.animation, signal:textControllerSignal, waits: story.waits, waitDelay: story.waitDelay});
-    const cleanText = parseStyles(story.text, 'This returns the clean text because nothing matches this.').text;
-    history.addStory(cleanText);
-    clearText(document.getElementById('action-output'));
-    story.usesLeft -= 1;
-}
-
 // returns the choices that are displayed
 function getShownChoices(choices, selectedChoices) {
     let shownChoices = []
@@ -1878,10 +1887,11 @@ async function attemptAction(action) {
 }
 
 // tries to run a list of actions or an action
-async function attemptActionsWithText(actions) {
+async function attemptActionsWithText(actions, exitCondition=()=>false) {
     let currentRunNumber = game.runNumber;
     if (Object.prototype.toString.call(actions) != '[object Array]') actions = [actions];
     for (const action of actions) {
+        if (exitCondition()) return;
         if (currentRunNumber != game.runNumber) return;
         let actionResult;
         if ((!action.delay || action.waits) && !action.skipsWait) {
@@ -1900,6 +1910,7 @@ async function attemptActionsWithText(actions) {
         if (action.waits && actionResult && action.type != 'encounter' && action.type != 'randomEncounter') {
             await awaitClick(document.getElementById('dialogue-box'));
         }
+        if (exitCondition()) return;
     }
 }
 
@@ -1933,13 +1944,14 @@ async function gameLoop() {
     while (game.isGameLoop) {
         let thisRoom = game.currentRoom;
         for (const item of game.currentRoom.queuelist) {
+            let actionlist = [];
             if (currentRunNumber != game.runNumber) return;
             if (player.hp <= 0) {
                 game.ending(game.currentEnding);
                 return;
             }
             if (item.type === 'story') {
-                await showStory(item.value);
+                actionlist.push(new Action({type: 'showStory', parameters: [item.value], requirements: item.value.requirements, waits: item.value.waits}))
             } else if (item.type === 'choicelist') {
                 let selectedChoices = [];
                 game.leaveChoices = false;
@@ -1954,20 +1966,28 @@ async function gameLoop() {
                     selectedChoices.push(selectedChoice);
                     clearText(document.getElementById('action-output'))
                     clearText(document.getElementById('choices'))
-                    await attemptActionsWithText(selectedChoice.actions);
+                    await attemptActionsWithText(selectedChoice.actions, ()=> {
+                if (thisRoom != game.currentRoom || !game.isGameLoop) return true;
+                if (player.hp <= 0) {
+                    game.ending(game.currentEnding?.name);
+                    return true;
+                }
+            })
                 }
             } else if (item.type === 'actionlist') {
-                await attemptActionsWithText(item.value);
+                actionlist.push(...item.value);
             }
-            if (thisRoom != game.currentRoom || !game.isGameLoop) { break }
-        }
-        if (player.hp <= 0) {
-            game.ending(game.currentEnding);
-            return;
+            await attemptActionsWithText(actionlist, ()=> {
+                if (thisRoom != game.currentRoom || !game.isGameLoop) return true;
+                if (player.hp <= 0) {
+                    game.ending(game.currentEnding);
+                    return true;
+                }
+            })
         }
         if (currentRunNumber != game.runNumber) return;
         else if (thisRoom === game.currentRoom) {
-            await showStory(new StoryObject('You have hit a dead end. Please add an ending or a way to change rooms here.', { waits: true, waitDelay: 30000 }));
+            await game.showStory(new StoryObject('You have hit a dead end. Please add an ending or a way to change rooms here.', { waits: true, waitDelay: 30000 }));
         }
     }
 }
