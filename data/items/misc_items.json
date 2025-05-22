@@ -16,12 +16,12 @@
     },
     "Example Reward": {
         "name": "Example Reward",
-        "description": "An example of an item gained as a battle reward",
+        "description": "An example of an item gained as a battle reward.",
         "type": "generic"
     },
     "Example Reward 2": {
         "name": "Example Reward 2",
-        "description": "An example of an item gained as a battle reward",
+        "description": "An example of an item gained as a battle reward.",
         "type": "generic"
     },
     "missingNo": {
@@ -143,6 +143,40 @@
             {"type": "gainAgility", "value": 50}
         ],
         "hideEffects": false
+    },
+    "Participation Trophy": {
+        "name": "Participation Trophy",
+        "description": "At least it's something, right?",
+        "type": "generic"
+    },
+    "Opinionated Seedling": {
+        "name": "Opinionated Seedling",
+        "description": "I am Root!",
+        "type": "generic"
+    },
+    "Slice of Brotherhood": {
+        "name": "Slice of Brotherhood",
+        "description": "A symbol of inseperable bonds. Cowabunga!",
+        "type": "generic"
+    },
+    "Questionable Mixtape": {
+        "name": "Questionable Mixtape",
+        "description": "Maybe its for the best that you don't have a tape player...",
+        "type": "generic"
+    },
+    "Unnecessary Trauma": {
+        "name": "Unnecessary Trauma",
+        "description": "There is no reason for you to be holding this",
+        "type": "generic"
+    },
+    "The Glockinator": {
+        "name": "The Glockinator",
+        "description": "Quite a peculiar weapon.",
+        "type": "consumable",
+        "effects": [
+            {"type": "gainStrength", "value": 1.5}
+        ]
     }
+
     
 }

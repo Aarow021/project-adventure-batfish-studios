@@ -148,7 +148,7 @@ class Game {
         let messages = [];
         player.changeHP(amount);
         if (player.hp <= 0) {
-            game.currentEnding = game.endings[cause] ? cause : 'default death';
+            game.currentEnding = cause ? cause : 'default death';
         }
         if (amount >= 0) {
             messages.push(customMessage || `[c:lime]HP +${amount}`);
@@ -373,7 +373,7 @@ class Game {
     // initiates an ending
     async ending(endType) {
         game.currentEnding = endType;
-        game.currentEnding.createChoice('Restart')
+        game.endings[currentEnding].createChoice('Restart')
             .addAction({ type: 'restart'});
         history.addEnding(endType);
         game.currentRoom = game.currentEnding;
@@ -1969,7 +1969,7 @@ async function gameLoop() {
                     await attemptActionsWithText(selectedChoice.actions, ()=> {
                 if (thisRoom != game.currentRoom || !game.isGameLoop) return true;
                 if (player.hp <= 0) {
-                    game.ending(game.currentEnding?.name);
+                    game.ending(game.currentEnding);
                     return true;
                 }
             })

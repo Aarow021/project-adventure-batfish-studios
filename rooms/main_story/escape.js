@@ -421,11 +421,10 @@ function generate() {
         ],
         rewardPool: [
             {name: 'Unnecessary Trauma', min: 1, max: 1},
-            {name: 'The Glockinator', min: 3, max: 3}
+            {name: 'The Glockinator', min: 2, max: 2}
         ],
-        groupName: 'the Six-Legged Syndicate!',
-        songSettings: {name: 'battle_stereo', pitch: .7}
-    }], waits: true});
+        groupName: 'the Six-Legged Syndicate!'
+    }, {name: 'battle_stereo', pitch: .5}], waits: true});
     room.addStory(`You quickly rush to [c:var(--character)]Idelle's [c:]aide as the others chase the bandits away.`);
     room.addStory(`[c:var(--destruction)]...This isn't good at all.`);
     room.addStory(`[fs:12px][c:var(--dialogue)]"Go..."`);
