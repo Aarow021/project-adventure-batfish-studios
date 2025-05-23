@@ -121,6 +121,7 @@ class Game {
         this.startingRoom = 'b-start'; // [ 'Example Hub' ][ 'b-start' ]
         this.runNumber = -1;
         this.playerState = 'default'; // 'default', 'battle', 'exploring'
+        this.gameState = 'init';
     }
 
     // Gives an item to the player's inventory
@@ -372,11 +373,13 @@ class Game {
 
     // initiates an ending
     async ending(endType) {
+        game.gameState = 'end';
         game.currentEnding = endType;
-        game.endings[currentEnding].createChoice('Restart')
+        let ending = game.endings[game.currentEnding];
+        ending.createChoice('Restart')
             .addAction({ type: 'restart'});
         history.addEnding(endType);
-        game.currentRoom = game.currentEnding;
+        game.currentRoom = ending;
         // clearDialogueText();
         // for (const item of game.currentEnding.queuelist) {
         //     if (item.type === 'story') {
@@ -419,6 +422,7 @@ class Game {
 
     // begins the game
     async start() {
+        game.gameState = 'alive';
         player = new Player();
         if (devMode) {
             game.getItem({name: 'Super Health Maximiser', min: 10});
@@ -1946,9 +1950,8 @@ async function gameLoop() {
         for (const item of game.currentRoom.queuelist) {
             let actionlist = [];
             if (currentRunNumber != game.runNumber) return;
-            if (player.hp <= 0) {
+            if (player.hp <= 0 && game.gameState != 'end') {
                 game.ending(game.currentEnding);
-                return;
             }
             if (item.type === 'story') {
                 actionlist.push(new Action({type: 'showStory', parameters: [item.value], requirements: item.value.requirements, waits: item.value.waits}))
@@ -1957,10 +1960,6 @@ async function gameLoop() {
                 game.leaveChoices = false;
                 while (game.isGameLoop && getShownChoices(item.value, selectedChoices).length > 0 && thisRoom === game.currentRoom && !game.leaveChoices) {
                     game.leaveChoices = false;
-                    if (player.hp <= 0) {
-                        game.ending(game.currentEnding);
-                        return;
-                    }
                     showChoices(item.value, choiceContainer, selectedChoices);
                     let selectedChoice = await tryChoices(choiceContainer);
                     selectedChoices.push(selectedChoice);
@@ -1968,9 +1967,8 @@ async function gameLoop() {
                     clearText(document.getElementById('choices'))
                     await attemptActionsWithText(selectedChoice.actions, ()=> {
                 if (thisRoom != game.currentRoom || !game.isGameLoop) return true;
-                if (player.hp <= 0) {
+                if (player.hp <= 0 && game.gameState != 'end') {
                     game.ending(game.currentEnding);
-                    return true;
                 }
             })
                 }
@@ -1979,9 +1977,8 @@ async function gameLoop() {
             }
             await attemptActionsWithText(actionlist, ()=> {
                 if (thisRoom != game.currentRoom || !game.isGameLoop) return true;
-                if (player.hp <= 0) {
+                if (player.hp <= 0 && game.gameState != 'end') {
                     game.ending(game.currentEnding);
-                    return true;
                 }
             })
         }
